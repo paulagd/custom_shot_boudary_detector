@@ -1,11 +1,11 @@
-
 import torch
-import numpy as np
 import json
-
+import pandas as pd
+from IPython import embed
 # python utilities for calculating
 # exponentially decaying moving average for each batch
 # running average for full data 
+
 
 # print the shape of a tensor in terms of how it relates to the boundary detection
 def print_shape(blank_batch):
@@ -21,8 +21,10 @@ def print_shape(blank_batch):
 def reshapeTransitionBatch(tensor):
     return tensor.permute(0,2,1,3,4).type('torch.cuda.FloatTensor')
 
+
 def reshapeLabels(labels):
     return labels.narrow(1,5,1).unsqueeze(1).unsqueeze(1).type('torch.cuda.LongTensor')
+
 
 def desired_labels(valid_loader):
     all_labels = [] 
@@ -89,6 +91,7 @@ def save_checkpoint(optimizer, model, epoch, filename):
     }
     torch.save(checkpoint_dict, filename)
 
+
 def load_checkpoint(optimizer, model, filename):
     checkpoint_dict = torch.load(filename)
     epoch = checkpoint_dict['epoch']
@@ -110,6 +113,7 @@ def get_and_write_transition_distribution(dataset, path):
     f.write(json_file)
     f.close()
 
+
 def normalize_frame(frame):
     # if np.std(frame) == 0 or np.mean == 0:
     #     return frame
@@ -117,5 +121,24 @@ def normalize_frame(frame):
     frame = frame / 255
     frame = frame - 0.45
     frame = frame / 0.225
-        #frame = (frame - np.mean(frame))/np.std(frame)
+    # frame = (frame - np.mean(frame))/np.std(frame)
     return frame
+
+
+def find_all_urls(file):
+
+    df = pd.read_pickle(file)
+    df.drop(index=6270, inplace=True)
+    # TAG == tematica_principal || promo
+    df.columns = map(str.lower, df.columns)
+    df.programa = df.programa.apply(lambda x: x.split(' - ')[0]) #df['class_name'].tolist()
+    df['url'] = df.apply(lambda row: row['mp4_500'] if not isinstance(row['mp4_500'], float) else row['mp4_500_es'], axis=1)# df['url'].tolist()
+    assert df['url'].isnull().sum() == 0
+    #durada = df['durada'].tolist()
+    print('----------------------')
+    print('----------------------')
+    print(f"There are {len(df)} different URL's to analyse:")
+    print('----------------------')
+    print('----------------------')
+    df = df[['content_id', 'url', 'promo', 'programa']]
+    return df
